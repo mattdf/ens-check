@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+		content="width=device-width, initial-scale=1, user-scalable=yes">
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+		<script src="http://peterolson.github.com/BigInteger.js/BigInteger.min.js"></script>
+		<script src="./sha3.js"></script>
+
+		<style>
+			.input {
+				min-height: 350px;
+				height: 100%;
+			}
+		</style>
+
+		<script>
+
+			function padding_right(s, n) {
+				c = "&nbsp;"
+				if (! s || ! c || s.length >= n) {
+					return s;
+				}
+				var max = (n - s.length);
+				for (var i = 0; i < max; i++) {
+					s += c;
+				}
+				return s;
+			}
+
+
+			function calcTime(hash){
+				registryStarted = 1493895600
+				launchLength = 4838400
+
+				var num = bigInt(hash, 16)
+
+				num = num.shiftRight(128)
+				num = num.times(launchLength)
+				num = num.shiftRight(128)
+				num = num.add(registryStarted)
+
+				return num.toString(10)
+			}
+
+			$(document).ready(function() {
+				updateResults = function (){
+					domains = $("#domains").val().split('\n')
+					times = Array()
+					for (var i = 0; i < domains.length; i++){
+						tuple = Array()
+						hash = keccak_256(domains[i])
+						out = calcTime(hash)
+						tuple.push(domains[i])
+						tuple.push(out)
+						times.push(tuple)
+					}
+
+					times = times.sort(function(a, b){
+						if (a[0].length < 7) return 1 
+						if (b[0].length < 7) return 0
+						return parseInt(a[1]) - parseInt(b[1])
+					})
+
+					now = Math.floor(Date.now() / 1000)
+
+					for (var i = 0; i < times.length; i++){
+						unixtime = times[i][1]
+						if (times[i][0].length < 7)
+							times[i][1] = "DOMAIN TOO SHORT"
+						else if (now > unixtime)
+							times[i][1] = "AVAILABLE NOW"
+						else 
+							times[i][1] = (new Date(unixtime*1000)).toString()
+
+						times[i][0] = padding_right(times[i][0] + ".eth", 30)
+						times[i][1] = padding_right(times[i][1], 45)
+					}
+
+					$("#results").html(times.join("<br />").replace(/\,/g," : "))
+				}
+				$("#domains").keyup(updateResults)
+				updateResults()
+			});
+		</script>
+	</head>
+	<body>
+
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-1"></div>
+				<div class="col-md-10 text-center"><h1>ENS Domain Time Check</h1><h4>Code on github: <a href="https://github.com/mattdf/ens-check">github.com/mattdf/ens-check</a></h4></div>
+				<div class="col-md-1"></div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-6 text-center">
+					<h2>Domains</h2>
+					<textarea id="domains" class="form-control input">ethereum</textarea>
+				</div>
+				<div class="col-md-6 text-center">
+					<h2>Results</h2>
+					<div id="results" style="font-family: Monospace"></div>
+				</div>
+			</div>
+		</div>
+
+	</body>
+</html>
+
